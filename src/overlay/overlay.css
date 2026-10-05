@@ -23,8 +23,10 @@ body,
   position: fixed;
   inset: 0;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 14px;
   overflow: hidden;
   /* A small, self-contained card so the effect reads as a popup. The window
      itself stays transparent; only this card is tinted, with rounded corners
@@ -35,23 +37,89 @@ body,
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
 }
 
-.celebration-banner {
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-  /* Sized in px to fit the ~420x180 popup predictably across monitors. */
-  font-size: 2.25rem;
-  font-weight: 800;
-  color: #ffffff;
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
-  animation: banner-pop 600ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+/* Accent color shared by the checkmark, glow and sparkles. */
+:root {
+  --accent: #34d399;
+  --accent-soft: rgba(52, 211, 153, 0.55);
 }
 
-@keyframes banner-pop {
+/* Wrapper that centers the glow, sparkles and checkmark on top of each other. */
+.celebration-badge {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  display: grid;
+  place-items: center;
+}
+
+/* ---- Soft glow / pulse behind the checkmark --------------------------- */
+.celebration-glow {
+  position: absolute;
+  inset: -14px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    var(--accent-soft) 0%,
+    rgba(52, 211, 153, 0) 70%
+  );
+  opacity: 0;
+  animation: glow-pulse 2.2s ease-out both;
+}
+
+@keyframes glow-pulse {
   0% {
     transform: scale(0.6);
     opacity: 0;
   }
+  25% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  70% {
+    transform: scale(1.12);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(1.2);
+    opacity: 0;
+  }
+}
+
+/* ---- Checkmark (circle scale-in + spring, tick draw-on) ---------------- */
+.celebration-check {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  /* Spring scale-in: slight overshoot then settle. */
+  animation: check-pop 600ms cubic-bezier(0.2, 1.4, 0.3, 1) both;
+}
+
+.check-circle {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-dasharray: 151; /* ~2*pi*24 */
+  stroke-dashoffset: 151;
+  animation: circle-draw 500ms ease-out forwards;
+}
+
+.check-tick {
+  stroke: var(--accent);
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 40;
+  stroke-dashoffset: 40;
+  animation: tick-draw 300ms 360ms ease-out forwards;
+}
+
+@keyframes check-pop {
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
   60% {
-    transform: scale(1.08);
     opacity: 1;
   }
   100% {
@@ -60,36 +128,99 @@ body,
   }
 }
 
-.confetti-piece {
-  position: fixed;
-  top: 0;
-  width: 7px;
-  height: 11px;
-  border-radius: 2px;
-  will-change: transform, opacity;
-  animation-name: confetti-fall;
-  animation-timing-function: cubic-bezier(0.3, 0.6, 0.5, 1);
-  animation-fill-mode: both;
+@keyframes circle-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
 }
 
-@keyframes confetti-fall {
+@keyframes tick-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* ---- Subtle sparkle burst --------------------------------------------- */
+.celebration-sparkles {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+
+.sparkle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent-soft);
+  opacity: 0;
+  will-change: transform, opacity;
+  /* Start centered; the keyframe translates outward along --angle. */
+  transform: translate(-50%, -50%) rotate(var(--angle)) translateX(0) scale(0);
+  animation: sparkle-fly 900ms ease-out both;
+}
+
+@keyframes sparkle-fly {
   0% {
-    transform: translateY(-20px) rotateZ(0deg);
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(var(--angle)) translateX(0) scale(0);
+  }
+  30% {
     opacity: 1;
+    transform: translate(-50%, -50%) rotate(var(--angle))
+      translateX(calc(var(--distance) * 0.6)) scale(1);
   }
   100% {
-    /* Falls just past the ~180px popup height, then fades. */
-    transform: translateY(200px) rotateZ(720deg);
-    opacity: 0.9;
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(var(--angle))
+      translateX(var(--distance)) scale(0.4);
   }
 }
 
-/* Respect users who prefer reduced motion: show the banner, skip the fall. */
+/* ---- Caption ----------------------------------------------------------- */
+.celebration-text {
+  margin: 0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  font-size: 1.125rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: #ffffff;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  animation: text-fade 500ms 220ms ease-out both;
+}
+
+@keyframes text-fade {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Respect users who prefer reduced motion: show the final state, skip motion. */
 @media (prefers-reduced-motion: reduce) {
-  .confetti-piece {
+  .celebration-glow {
+    animation: none;
+    opacity: 0.4;
+  }
+  .celebration-check {
+    animation: none;
+  }
+  .check-circle,
+  .check-tick {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+  .sparkle {
     display: none;
   }
-  .celebration-banner {
+  .celebration-text {
     animation: none;
+    opacity: 1;
   }
 }
