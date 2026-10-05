@@ -1,6 +1,6 @@
 [package]
 name = "productivity-timer"
-version = "0.1.0"
+version = "0.2.1"
 description = "A client-only productivity timer, packaged as a desktop app with Tauri."
 authors = ["hyeyeonghwang"]
 edition = "2021"

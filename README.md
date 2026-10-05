@@ -1,5 +1,7 @@
 # Productivity Timer
 
+<img src="docs/images/app-main.png" alt="Productivity Timer main screen" width="400">
+
 A simple, client-only productivity timer web app. It supports a countdown timer
 with preset and custom durations, a Pomodoro focus/break workflow, a visual
 progress ring, sound and browser notifications on completion, and daily focus
@@ -78,6 +80,28 @@ The same web app is packaged as a native **Windows desktop application** using
 desktop shell loads the existing web UI and adds one feature: a transparent,
 always-on-top, fullscreen **celebration overlay** that appears whenever a timer
 completes (countdown finish, or a Pomodoro focus/break phase finish).
+
+### Download (Windows)
+
+A prebuilt Windows installer is available from the
+[**Releases**](https://github.com/hyeyeonghwang/productivity-timer/releases)
+page. Latest:
+[**v0.2.1**](https://github.com/hyeyeonghwang/productivity-timer/releases/tag/v0.2.1).
+
+1. Download the installer
+   [`Productivity Timer_0.2.1_x64-setup.exe`](https://github.com/hyeyeonghwang/productivity-timer/releases/download/v0.2.1/Productivity.Timer_0.2.1_x64-setup.exe)
+   (NSIS installer).
+2. Run it and follow the prompts. If Windows SmartScreen warns about an
+   unrecognized publisher (the build is unsigned), choose **More info →
+   Run anyway**.
+3. Launch **Productivity Timer** from the Start menu.
+
+> Requirements: Windows 10/11 (64-bit). **WebView2** is required and is
+> preinstalled on Windows 11; on Windows 10 the installer bundles it.
+>
+> The build is not code-signed yet, so the SmartScreen prompt above is
+> expected. To build it yourself instead, see
+> [Run / build the desktop app](#run--build-the-desktop-app) below.
 
 ### How the overlay works
 
