@@ -4,3 +4,8 @@ dist-ssr
 *.local
 .DS_Store
 coverage
+
+# Tauri
+src-tauri/target
+src-tauri/gen
+

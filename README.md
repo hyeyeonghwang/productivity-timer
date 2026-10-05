@@ -68,8 +68,52 @@ npm run dev
 | `npm test`           | Run the full test suite once                     |
 | `npm run test:watch` | Run tests in watch mode                          |
 | `npm run typecheck`  | Type-check without emitting output               |
+| `npm run tauri:dev`  | Run the desktop app in dev mode (requires Rust)  |
+| `npm run tauri:build`| Build the desktop installer (requires Rust)      |
 
-## Project structure
+## Desktop app (Tauri v2, Windows)
+
+The same web app is packaged as a native **Windows desktop application** using
+[Tauri v2](https://v2.tauri.app/). The timer architecture is unchanged — the
+desktop shell loads the existing web UI and adds one feature: a transparent,
+always-on-top, fullscreen **celebration overlay** that appears whenever a timer
+completes (countdown finish, or a Pomodoro focus/break phase finish).
+
+### How the overlay works
+
+- On completion, the frontend calls a Tauri command (`show_celebration`) from
+  the single completion path in `useTimerController`. In a plain browser build
+  this call is a safe no-op, so the web app is unaffected.
+- Rust creates a separate `overlay.html` window that is transparent,
+  borderless, fullscreen, always-on-top, skipped in the taskbar, not focused,
+  and **click-through** (`set_ignore_cursor_events`) so it never blocks you.
+- The overlay shows a confetti burst + a "Done!" banner, respects
+  `prefers-reduced-motion`, and auto-dismisses after a few seconds.
+
+### Prerequisites
+
+- The web prerequisites above (Node 18+, npm)
+- The [Rust toolchain](https://www.rust-lang.org/tools/install) (`rustup`/`cargo`)
+- On Windows: **Microsoft C++ Build Tools** and **WebView2** (preinstalled on
+  Windows 11; the installer bundles it otherwise)
+- See the Tauri prerequisites guide: https://v2.tauri.app/start/prerequisites/
+
+### Run / build the desktop app
+
+```bash
+# install JS dependencies (first time only)
+npm install
+
+# run the desktop app in development (hot-reloads the web UI)
+npm run tauri:dev
+
+# build a Windows installer (NSIS) into src-tauri/target/release/bundle/
+npm run tauri:build
+```
+
+> **Icons:** `src-tauri/icons/` currently contains simple solid-color
+> placeholder icons so the project builds out of the box. Replace them with your
+> own by running `npm run tauri icon path/to/icon.png`.
 
 Timer logic is kept separate from the UI. The layers are:
 
@@ -84,6 +128,7 @@ src/
   lib/           Browser side effects
     audio.ts       Web Audio completion chime
     notifications.ts  Notification API wrapper
+    tauri.ts       Desktop bridge (no-op in the browser)
   hooks/         React state/orchestration adapters
     useTimer.ts
     useSettings.ts
@@ -95,8 +140,15 @@ src/
     TimerDisplay.tsx  ProgressRing.tsx  ControlBar.tsx
     PresetGrid.tsx    CustomInput.tsx   ModeTabs.tsx
     PomodoroBadge.tsx StatsPanel.tsx    SettingsPanel.tsx
+  overlay/       Celebration overlay (separate HTML entry)
+    main.tsx  Celebration.tsx  overlay.css
   App.tsx        Layout and wiring only
   main.tsx       Entry point
+index.html       Main app entry
+overlay.html     Celebration overlay entry
+src-tauri/       Tauri v2 desktop shell (Rust)
+  src/lib.rs     show_celebration / close_celebration commands
+  tauri.conf.json  capabilities/  icons/
 tests/           Vitest unit / hook / integration tests
 ```
 

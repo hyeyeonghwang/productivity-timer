@@ -19,6 +19,7 @@ import {
   phaseDuration,
 } from '../core/pomodoro';
 import { playChime, unlockAudio } from '../lib/audio';
+import { showCelebration } from '../lib/tauri';
 import { useTimer } from './useTimer';
 import { useSettings } from './useSettings';
 import { useStatistics } from './useStatistics';
@@ -89,6 +90,9 @@ export function useTimerController() {
       if (s.notificationsEnabled && notifications.status === 'granted') {
         notifications.notify(title, body);
       }
+      // Desktop-only: show the transparent fullscreen celebration overlay.
+      // No-op in the browser; fire-and-forget so it never blocks completion.
+      void showCelebration();
     },
     [notifications],
   );
