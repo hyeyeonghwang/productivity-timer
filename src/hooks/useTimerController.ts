@@ -19,7 +19,7 @@ import {
   phaseDuration,
 } from "../core/pomodoro";
 import { playChime, unlockAudio } from "../lib/audio";
-import { showCelebration } from "../lib/tauri";
+import { showCelebration, isTauri } from "../lib/tauri";
 import { useTimer } from "./useTimer";
 import { useSettings } from "./useSettings";
 import { useStatistics } from "./useStatistics";
@@ -254,6 +254,12 @@ export function useTimerController() {
         updateSettings({ notificationsEnabled: false });
         return;
       }
+      // Desktop shell: browser notifications are not offered here, so never
+      // request permission. Keep the setting off.
+      if (isTauri()) {
+        updateSettings({ notificationsEnabled: false });
+        return;
+      }
       if (!notifications.supported) {
         updateSettings({ notificationsEnabled: false });
         return;
@@ -280,6 +286,11 @@ export function useTimerController() {
       "Permission denied. Enable notifications in your browser settings.";
   }
 
+  // Browser notifications are a web-only feature. The desktop shell (Tauri)
+  // uses the celebration overlay instead, so hide the setting there and avoid
+  // ever requesting Notification permission.
+  const showNotifications = !isTauri();
+
   return {
     // state
     timerState: timer.state,
@@ -292,6 +303,7 @@ export function useTimerController() {
     statusMessage,
     notificationsNote,
     notificationsDisabled,
+    showNotifications,
     // controls
     start,
     pause,

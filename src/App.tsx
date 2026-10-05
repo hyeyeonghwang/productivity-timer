@@ -73,6 +73,7 @@ export default function App(): JSX.Element {
             settings={c.settings}
             notificationsNote={c.notificationsNote}
             notificationsDisabled={c.notificationsDisabled}
+            showNotifications={c.showNotifications}
             onChange={(patch) => {
               if ('soundEnabled' in patch && patch.soundEnabled !== undefined) {
                 c.setSoundEnabled(patch.soundEnabled);

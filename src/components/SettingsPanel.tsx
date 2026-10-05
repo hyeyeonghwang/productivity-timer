@@ -12,6 +12,13 @@ export interface SettingsPanelProps {
   notificationsNote?: string;
   /** Disables the notifications toggle (e.g. unsupported browser). */
   notificationsDisabled?: boolean;
+  /**
+   * Whether to render the browser notifications row at all. Defaults to true.
+   * The parent sets this to false on platforms without browser notifications
+   * (e.g. the Tauri desktop shell); this component stays presentational and
+   * performs no environment detection itself.
+   */
+  showNotifications?: boolean;
 }
 
 interface Row {
@@ -48,7 +55,11 @@ export function SettingsPanel({
   onChange,
   notificationsNote,
   notificationsDisabled = false,
+  showNotifications = true,
 }: SettingsPanelProps): JSX.Element {
+  const rows = showNotifications
+    ? ROWS
+    : ROWS.filter((row) => row.key !== 'notificationsEnabled');
   return (
     <section
       className="rounded-lg border border-slate-200 p-4"
@@ -61,7 +72,7 @@ export function SettingsPanel({
         Settings
       </h2>
       <ul className="flex flex-col gap-4">
-        {ROWS.map((row) => {
+        {rows.map((row) => {
           const isNotifications = row.key === 'notificationsEnabled';
           return (
             <li key={row.key} className="flex items-start justify-between gap-4">
