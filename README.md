@@ -86,10 +86,10 @@ completes (countdown finish, or a Pomodoro focus/break phase finish).
 A prebuilt Windows installer is available from the
 [**Releases**](https://github.com/hyeyeonghwang/productivity-timer/releases)
 page. Latest:
-[**v0.2.1**](https://github.com/hyeyeonghwang/productivity-timer/releases/tag/v0.2.1).
+[**v0.3.0**](https://github.com/hyeyeonghwang/productivity-timer/releases/tag/v0.3.0).
 
 1. Download the installer
-   [`Productivity Timer_0.2.1_x64-setup.exe`](https://github.com/hyeyeonghwang/productivity-timer/releases/download/v0.2.1/Productivity.Timer_0.2.1_x64-setup.exe)
+   [`Productivity Timer_0.3.0_x64-setup.exe`](https://github.com/hyeyeonghwang/productivity-timer/releases/download/v0.3.0/Productivity.Timer_0.3.0_x64-setup.exe)
    (NSIS installer).
 2. Run it and follow the prompts. If Windows SmartScreen warns about an
    unrecognized publisher (the build is unsigned), choose **More info →
