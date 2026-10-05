@@ -48,6 +48,8 @@ describe('useStatistics — initialization', () => {
       date: todayKey(),
       completedFocusSessions: 0,
       totalFocusMs: 0,
+      completedCountdownSessions: 0,
+      totalCountdownMs: 0,
     });
   });
 
@@ -152,14 +154,65 @@ describe('useStatistics — recording focus sessions', () => {
   });
 });
 
+describe('useStatistics — recording countdown sessions', () => {
+  it('increments count and total countdown time, separate from focus', () => {
+    const { harness } = renderStats();
+    act(() => harness.current.recordCountdownSession(10 * MIN));
+    expect(harness.current.statistics.completedCountdownSessions).toBe(1);
+    expect(harness.current.statistics.totalCountdownMs).toBe(10 * MIN);
+    // Focus statistics are untouched by a countdown session.
+    expect(harness.current.statistics.completedFocusSessions).toBe(0);
+    expect(harness.current.statistics.totalFocusMs).toBe(0);
+  });
+
+  it('keeps focus and countdown statistics independent', () => {
+    const { harness } = renderStats();
+    act(() => harness.current.recordFocusSession(25 * MIN));
+    act(() => harness.current.recordCountdownSession(10 * MIN));
+    expect(harness.current.statistics.completedFocusSessions).toBe(1);
+    expect(harness.current.statistics.totalFocusMs).toBe(25 * MIN);
+    expect(harness.current.statistics.completedCountdownSessions).toBe(1);
+    expect(harness.current.statistics.totalCountdownMs).toBe(10 * MIN);
+  });
+
+  it('ignores non-positive countdown durations', () => {
+    const { harness } = renderStats();
+    act(() => harness.current.recordCountdownSession(0));
+    act(() => harness.current.recordCountdownSession(-1000));
+    expect(harness.current.statistics.completedCountdownSessions).toBe(0);
+    expect(harness.current.statistics.totalCountdownMs).toBe(0);
+  });
+
+  it('does not double-count when the same countdown sessionKey is reused', () => {
+    const { harness } = renderStats();
+    act(() => harness.current.recordCountdownSession(10 * MIN, 'cd-1'));
+    act(() => harness.current.recordCountdownSession(10 * MIN, 'cd-1'));
+    expect(harness.current.statistics.completedCountdownSessions).toBe(1);
+    expect(harness.current.statistics.totalCountdownMs).toBe(10 * MIN);
+  });
+
+  it('uses independent dedupe keys for focus and countdown', () => {
+    const { harness } = renderStats();
+    // Same key string for both kinds must not cross-suppress each other.
+    act(() => harness.current.recordFocusSession(25 * MIN, 'shared-key'));
+    act(() => harness.current.recordCountdownSession(10 * MIN, 'shared-key'));
+    expect(harness.current.statistics.completedFocusSessions).toBe(1);
+    expect(harness.current.statistics.completedCountdownSessions).toBe(1);
+  });
+});
+
 describe('useStatistics — break sessions', () => {
-  it('break completion does not affect focus statistics (never recorded)', () => {
-    // Breaks simply never call recordFocusSession; simulate a break finishing
-    // by NOT calling it and asserting stats are unchanged.
+  it('break completion does not affect focus or countdown statistics', () => {
+    // Breaks simply never call recordFocusSession/recordCountdownSession;
+    // simulate a break finishing by NOT calling either and asserting both
+    // statistics remain untouched.
     const { harness } = renderStats();
     const before = harness.current.statistics;
-    // (no recordFocusSession call for a break)
+    // (no record* call for a break)
     expect(harness.current.statistics).toEqual(before);
     expect(harness.current.statistics.completedFocusSessions).toBe(0);
+    expect(harness.current.statistics.totalFocusMs).toBe(0);
+    expect(harness.current.statistics.completedCountdownSessions).toBe(0);
+    expect(harness.current.statistics.totalCountdownMs).toBe(0);
   });
 });

@@ -118,6 +118,8 @@ describe('statistics persistence', () => {
       date: todayKey(now),
       completedFocusSessions: 3,
       totalFocusMs: 75 * 60_000,
+      completedCountdownSessions: 2,
+      totalCountdownMs: 30 * 60_000,
     };
     saveStatistics(stats);
     expect(loadStatistics(now)).toEqual(stats);
@@ -128,6 +130,8 @@ describe('statistics persistence', () => {
       date: '2026-10-04',
       completedFocusSessions: 5,
       totalFocusMs: 125 * 60_000,
+      completedCountdownSessions: 4,
+      totalCountdownMs: 60 * 60_000,
     };
     saveStatistics(yesterday);
     const today = new Date(2026, 9, 5);
@@ -138,5 +142,33 @@ describe('statistics persistence', () => {
     localStorage.setItem(STORAGE_KEYS.stats, 'not-json');
     const now = new Date(2026, 9, 5);
     expect(loadStatistics(now)).toEqual(defaultStatistics(now));
+  });
+
+  it('backfills missing countdown fields on older persisted stats with zeros', () => {
+    const now = new Date(2026, 9, 5);
+    // Legacy blob written before the countdown fields existed.
+    localStorage.setItem(
+      STORAGE_KEYS.stats,
+      JSON.stringify({
+        date: todayKey(now),
+        completedFocusSessions: 4,
+        totalFocusMs: 100 * 60_000,
+      }),
+    );
+    const loaded = loadStatistics(now);
+    // Existing focus data is preserved...
+    expect(loaded.completedFocusSessions).toBe(4);
+    expect(loaded.totalFocusMs).toBe(100 * 60_000);
+    // ...and the new countdown fields are safely backfilled with zeros.
+    expect(loaded.completedCountdownSessions).toBe(0);
+    expect(loaded.totalCountdownMs).toBe(0);
+    // The full shape matches the current schema.
+    expect(loaded).toEqual<DailyStatistics>({
+      date: todayKey(now),
+      completedFocusSessions: 4,
+      totalFocusMs: 100 * 60_000,
+      completedCountdownSessions: 0,
+      totalCountdownMs: 0,
+    });
   });
 });

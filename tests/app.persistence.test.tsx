@@ -72,9 +72,16 @@ describe('Persistence across reload (remount)', () => {
 
     unmount();
     render(<App />);
-    // Stats panel reflects the persisted session after "reload".
-    expect(screen.getByText('Completed sessions')).toBeInTheDocument();
+    // Stats panel reflects the persisted session after "reload". Both the
+    // Pomodoro and Countdown subsections render a "Completed sessions" label,
+    // so assert the panel structure via the subsection headings and confirm
+    // the persisted focus session count survived.
+    expect(screen.getByRole('heading', { name: 'Pomodoro' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Countdown' })).toBeInTheDocument();
+    expect(screen.getAllByText('Completed sessions')).toHaveLength(2);
     expect(loadStatistics().completedFocusSessions).toBe(1);
+    // The persisted focus count (1) is shown; countdown stayed at 0.
+    expect(loadStatistics().completedCountdownSessions).toBe(0);
   });
 
   it('invalid persisted values do not crash the app', () => {
@@ -86,6 +93,7 @@ describe('Persistence across reload (remount)', () => {
   });
 
   it('previous-day statistics reset to zero on load', () => {
+    // Legacy blob from a past day, written before countdown fields existed.
     localStorage.setItem(
       STORAGE_KEYS.stats,
       JSON.stringify({
@@ -96,9 +104,15 @@ describe('Persistence across reload (remount)', () => {
     );
     seedSettings({ mode: 'standard' });
     render(<App />);
-    // Day rollover => zeroed; the stats region shows 0 sessions and 0m.
-    expect(loadStatistics().completedFocusSessions).toBe(0);
-    expect(screen.getByText('0m')).toBeInTheDocument();
+    // Day rollover => all statistics zeroed; the missing legacy countdown
+    // fields are backfilled with zeros rather than left undefined.
+    const stats = loadStatistics();
+    expect(stats.completedFocusSessions).toBe(0);
+    expect(stats.totalFocusMs).toBe(0);
+    expect(stats.completedCountdownSessions).toBe(0);
+    expect(stats.totalCountdownMs).toBe(0);
+    // Both the Pomodoro focus time and the Countdown total time render "0m".
+    expect(screen.getAllByText('0m')).toHaveLength(2);
   });
 });
 
