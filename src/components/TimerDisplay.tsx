@@ -1,4 +1,4 @@
-import { formatDuration } from '../core/format';
+import { formatDuration } from "../core/format";
 
 export interface TimerDisplayProps {
   /** Remaining time in milliseconds (computed by the parent/hook). */

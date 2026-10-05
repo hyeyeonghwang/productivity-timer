@@ -1,29 +1,25 @@
 /**
- * useStatistics — React state/orchestration over persisted {@link DailyStatistics}.
+ * useStatistics — React state/orchestration over persisted DailyStatistics.
  *
- * Responsibilities (requirements.md Req 9, 10):
- * - Initialize from persisted statistics (`loadStatistics`), which already
- *   applies day-rollover: a stored record from a previous day loads as a fresh
- *   zeroed record for today.
- * - Record completed FOCUS sessions, incrementing both the completed-session
- *   count and the total focus time. Break sessions never call this method, so
- *   they cannot contribute to focus statistics.
- * - Guard against double-counting when a finish callback fires more than once,
- *   via an optional dedupe key.
- * - Persist immediately after each state change.
- * - Perform a day-rollover check on record so a session that completes after
- *   midnight is attributed to the correct day.
+ * Responsibilities:
+ * - Initialize persisted daily statistics.
+ * - Record completed Pomodoro focus sessions.
+ * - Record completed countdown sessions separately.
+ * - Never count Pomodoro break sessions.
+ * - Guard against duplicate recording using an optional session key.
+ * - Persist statistics after state changes.
+ * - Handle day rollover when a session completes after midnight.
  *
  * No timer logic lives here.
  */
-import { useCallback, useEffect, useRef, useState } from 'react';
-import type { DailyStatistics } from '../core/types';
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { DailyStatistics } from "../core/types";
 import {
   loadStatistics,
   saveStatistics,
   defaultStatistics,
   todayKey,
-} from '../core/storage';
+} from "../core/storage";
 
 /** Value returned by {@link useStatistics}. */
 export interface UseStatisticsResult {
@@ -36,6 +32,7 @@ export interface UseStatisticsResult {
    *   ignored, preventing double-counting from a repeated finish callback.
    */
   recordFocusSession: (durationMs: number, sessionKey?: string) => void;
+  recordCountdownSession: (durationMs: number, sessionKey?: string) => void;
 }
 
 export function useStatistics(): UseStatisticsResult {
@@ -54,25 +51,28 @@ export function useStatistics(): UseStatisticsResult {
   }, [statistics]);
 
   // Remembers the last recorded dedupe key to avoid double counting.
-  const lastSessionKeyRef = useRef<string | null>(null);
+  const lastFocusSessionKeyRef = useRef<string | null>(null);
+  const lastCountdownSessionKeyRef = useRef<string | null>(null);
 
   const recordFocusSession = useCallback(
     (durationMs: number, sessionKey?: string) => {
       if (durationMs <= 0) return;
-      if (sessionKey !== undefined && sessionKey === lastSessionKeyRef.current) {
+      if (
+        sessionKey !== undefined &&
+        sessionKey === lastFocusSessionKeyRef.current
+      ) {
         return; // same finish already counted
       }
       if (sessionKey !== undefined) {
-        lastSessionKeyRef.current = sessionKey;
+        lastFocusSessionKeyRef.current = sessionKey;
       }
 
       setStatistics((prev) => {
         // Attribute to the correct day: if the day rolled over since the last
         // record, start a fresh record before adding this session.
-        const base =
-          prev.date === todayKey() ? prev : defaultStatistics();
+        const base = prev.date === todayKey() ? prev : defaultStatistics();
         return {
-          date: base.date,
+          ...base,
           completedFocusSessions: base.completedFocusSessions + 1,
           totalFocusMs: base.totalFocusMs + durationMs,
         };
@@ -81,5 +81,33 @@ export function useStatistics(): UseStatisticsResult {
     [],
   );
 
-  return { statistics, recordFocusSession };
+  const recordCountdownSession = useCallback(
+    (durationMs: number, sessionKey?: string) => {
+      if (durationMs <= 0) return;
+
+      if (
+        sessionKey !== undefined &&
+        sessionKey === lastCountdownSessionKeyRef.current
+      ) {
+        return;
+      }
+
+      if (sessionKey !== undefined) {
+        lastCountdownSessionKeyRef.current = sessionKey;
+      }
+
+      setStatistics((prev) => {
+        const base = prev.date === todayKey() ? prev : defaultStatistics();
+
+        return {
+          ...base,
+          completedCountdownSessions: base.completedCountdownSessions + 1,
+          totalCountdownMs: base.totalCountdownMs + durationMs,
+        };
+      });
+    },
+    [],
+  );
+
+  return { statistics, recordFocusSession, recordCountdownSession };
 }

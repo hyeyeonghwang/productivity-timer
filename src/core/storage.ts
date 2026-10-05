@@ -8,19 +8,19 @@
  *
  * This module is framework-agnostic and holds no application state.
  */
-import type { Settings, DailyStatistics } from './types';
+import type { Settings, DailyStatistics } from "./types";
 
 /** Versioned localStorage keys. */
 export const STORAGE_KEYS = {
-  settings: 'pt.settings.v1',
-  stats: 'pt.stats.v1',
+  settings: "pt.settings.v1",
+  stats: "pt.stats.v1",
 } as const;
 
 /** Returns the local calendar day as `YYYY-MM-DD`. */
 export function todayKey(date: Date = new Date()): string {
   const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 }
 
@@ -28,7 +28,7 @@ export function todayKey(date: Date = new Date()): string {
 export const DEFAULT_SETTINGS: Settings = {
   soundEnabled: true,
   notificationsEnabled: false,
-  mode: 'standard',
+  mode: "standard",
   selectedPreset: 25,
   customDurationMs: 25 * 60 * 1000,
   pomodoroAutoStart: false,
@@ -40,18 +40,20 @@ export function defaultStatistics(date: Date = new Date()): DailyStatistics {
     date: todayKey(date),
     completedFocusSessions: 0,
     totalFocusMs: 0,
+    completedCountdownSessions: 0,
+    totalCountdownMs: 0,
   };
 }
 
 /** Narrows an unknown value to a plain (non-array, non-null) object. */
 function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 /** Returns true when `localStorage` is available in the current environment. */
 function hasLocalStorage(): boolean {
   try {
-    return typeof localStorage !== 'undefined';
+    return typeof localStorage !== "undefined";
   } catch {
     return false;
   }

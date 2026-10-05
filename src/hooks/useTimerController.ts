@@ -11,19 +11,19 @@
  * It is extracted from `App` so the orchestration is independently testable; the
  * component tree stays purely presentational.
  */
-import { useCallback, useEffect, useRef, useState } from 'react';
-import type { PomodoroPhase, PresetMinutes, TimerMode } from '../core/types';
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { PomodoroPhase, PresetMinutes, TimerMode } from "../core/types";
 import {
   INITIAL_POMODORO_PHASE,
   nextPomodoroPhase,
   phaseDuration,
-} from '../core/pomodoro';
-import { playChime, unlockAudio } from '../lib/audio';
-import { showCelebration } from '../lib/tauri';
-import { useTimer } from './useTimer';
-import { useSettings } from './useSettings';
-import { useStatistics } from './useStatistics';
-import { useNotifications } from './useNotifications';
+} from "../core/pomodoro";
+import { playChime, unlockAudio } from "../lib/audio";
+import { showCelebration } from "../lib/tauri";
+import { useTimer } from "./useTimer";
+import { useSettings } from "./useSettings";
+import { useStatistics } from "./useStatistics";
+import { useNotifications } from "./useNotifications";
 
 /** Human-readable status announcements for the live region. */
 export interface ControllerStatusMessage {
@@ -36,18 +36,19 @@ function durationForSettings(
   selectedPreset: PresetMinutes | null,
   customDurationMs: number,
 ): number {
-  if (mode === 'pomodoro') return phaseDuration(phase);
+  if (mode === "pomodoro") return phaseDuration(phase);
   if (selectedPreset !== null) return selectedPreset * 60_000;
   return customDurationMs;
 }
 
 export function useTimerController() {
   const { settings, updateSettings } = useSettings();
-  const { statistics, recordFocusSession } = useStatistics();
+  const { statistics, recordFocusSession, recordCountdownSession } =
+    useStatistics();
   const notifications = useNotifications();
 
   const [phase, setPhase] = useState<PomodoroPhase>(INITIAL_POMODORO_PHASE);
-  const [statusMessage, setStatusMessage] = useState<string>('');
+  const [statusMessage, setStatusMessage] = useState<string>("");
 
   const initialDuration = durationForSettings(
     settings.mode,
@@ -87,7 +88,7 @@ export function useTimerController() {
           /* audio must never break completion */
         }
       }
-      if (s.notificationsEnabled && notifications.status === 'granted') {
+      if (s.notificationsEnabled && notifications.status === "granted") {
         notifications.notify(title, body);
       }
       // Desktop-only: show the transparent fullscreen celebration overlay.
@@ -105,21 +106,26 @@ export function useTimerController() {
       const { mode, phase: finishedPhase } = stateRef.current;
       const t = timerRef.current;
 
-      if (mode !== 'pomodoro') {
+      if (mode !== "pomodoro") {
+        const key =
+          sessionKeyRef.current ?? `session-${sessionCounterRef.current}`;
+        // Record the completed countdown session.
+        recordCountdownSession(durationMs, key);
         // Countdown completion: effects only; no Pomodoro stats; stay finished.
-        fireCompletionEffects('Timer finished', 'Your countdown is complete.');
-        setStatusMessage('Countdown finished.');
+        fireCompletionEffects("Timer finished", "Your countdown is complete.");
+        setStatusMessage("Countdown finished.");
         return;
       }
 
       // Pomodoro completion.
-      if (finishedPhase === 'focus') {
+      if (finishedPhase === "focus") {
         // Record exactly one focus session (defensive dedupe via sessionKey).
-        const key = sessionKeyRef.current ?? `session-${sessionCounterRef.current}`;
+        const key =
+          sessionKeyRef.current ?? `session-${sessionCounterRef.current}`;
         recordFocusSession(durationMs, key);
-        fireCompletionEffects('Focus session complete', 'Time for a break.');
+        fireCompletionEffects("Focus session complete", "Time for a break.");
       } else {
-        fireCompletionEffects('Break complete', 'Back to focus.');
+        fireCompletionEffects("Break complete", "Back to focus.");
       }
 
       const next = nextPomodoroPhase(finishedPhase);
@@ -127,9 +133,9 @@ export function useTimerController() {
       // Load the next phase duration (finished -> idle at new duration).
       t.setDuration(next.durationMs);
       setStatusMessage(
-        next.phase === 'focus'
-          ? 'Break finished. Focus phase loaded.'
-          : 'Focus finished. Break phase loaded.',
+        next.phase === "focus"
+          ? "Break finished. Focus phase loaded."
+          : "Focus finished. Break phase loaded.",
       );
 
       // Auto-start only when enabled.
@@ -140,7 +146,7 @@ export function useTimerController() {
         t.start();
       }
     },
-    [fireCompletionEffects, recordFocusSession],
+    [fireCompletionEffects, recordFocusSession, recordCountdownSession],
   );
 
   // ---- Controls (wrap the timer, add orchestration concerns) --------------
@@ -152,24 +158,24 @@ export function useTimerController() {
     sessionCounterRef.current += 1;
     sessionKeyRef.current = `session-${sessionCounterRef.current}`;
     timer.start();
-    setStatusMessage('Timer started.');
+    setStatusMessage("Timer started.");
   }, [timer]);
 
   const pause = useCallback(() => {
     timer.pause();
-    setStatusMessage('Timer paused.');
+    setStatusMessage("Timer paused.");
   }, [timer]);
 
   const resume = useCallback(() => {
     unlockAudio();
     timer.resume();
-    setStatusMessage('Timer resumed.');
+    setStatusMessage("Timer resumed.");
   }, [timer]);
 
   const reset = useCallback(() => {
     timer.reset();
     sessionKeyRef.current = null;
-    setStatusMessage('Timer reset.');
+    setStatusMessage("Timer reset.");
   }, [timer]);
 
   // ---- Countdown duration selection ---------------------------------------
@@ -202,22 +208,28 @@ export function useTimerController() {
       sessionKeyRef.current = null;
       updateSettings({ mode });
 
-      if (mode === 'pomodoro') {
-        setPhase('focus');
-        timer.setDuration(phaseDuration('focus'));
-        setStatusMessage('Switched to Pomodoro. Focus phase loaded.');
+      if (mode === "pomodoro") {
+        setPhase("focus");
+        timer.setDuration(phaseDuration("focus"));
+        setStatusMessage("Switched to Pomodoro. Focus phase loaded.");
       } else {
         const duration = durationForSettings(
-          'standard',
-          'focus',
+          "standard",
+          "focus",
           settings.selectedPreset,
           settings.customDurationMs,
         );
         timer.setDuration(duration);
-        setStatusMessage('Switched to Countdown.');
+        setStatusMessage("Switched to Countdown.");
       }
     },
-    [settings.mode, settings.selectedPreset, settings.customDurationMs, timer, updateSettings],
+    [
+      settings.mode,
+      settings.selectedPreset,
+      settings.customDurationMs,
+      timer,
+      updateSettings,
+    ],
   );
 
   // ---- Settings: notifications permission on user gesture -----------------
@@ -247,12 +259,12 @@ export function useTimerController() {
         return;
       }
       let status = notifications.status;
-      if (status === 'default') {
+      if (status === "default") {
         status = await notifications.requestPermission();
       }
       // Only mark enabled when actually granted; otherwise keep it off so the
       // UI reflects that notifications cannot be delivered.
-      updateSettings({ notificationsEnabled: status === 'granted' });
+      updateSettings({ notificationsEnabled: status === "granted" });
     },
     [notifications, updateSettings],
   );
@@ -261,11 +273,11 @@ export function useTimerController() {
   let notificationsNote: string | undefined;
   let notificationsDisabled = false;
   if (!notifications.supported) {
-    notificationsNote = 'Notifications are not supported in this browser.';
+    notificationsNote = "Notifications are not supported in this browser.";
     notificationsDisabled = true;
-  } else if (notifications.status === 'denied') {
+  } else if (notifications.status === "denied") {
     notificationsNote =
-      'Permission denied. Enable notifications in your browser settings.';
+      "Permission denied. Enable notifications in your browser settings.";
   }
 
   return {

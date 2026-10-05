@@ -6,7 +6,7 @@
  */
 
 /** Lifecycle status of a single countdown. */
-export type TimerStatus = 'idle' | 'running' | 'paused' | 'finished';
+export type TimerStatus = "idle" | "running" | "paused" | "finished";
 
 /**
  * Immutable snapshot of a countdown timer.
@@ -34,10 +34,10 @@ export interface TimerState {
 }
 
 /** Pomodoro phase. */
-export type PomodoroPhase = 'focus' | 'break';
+export type PomodoroPhase = "focus" | "break";
 
 /** Timer operating mode. */
-export type TimerMode = 'standard' | 'pomodoro';
+export type TimerMode = "standard" | "pomodoro";
 
 /** User-configurable preset durations, in minutes. */
 export type PresetMinutes = 5 | 10 | 25 | 50;
@@ -63,4 +63,8 @@ export interface DailyStatistics {
   completedFocusSessions: number;
   /** Total focused time for the day, in ms. */
   totalFocusMs: number;
+  /** Count of completed countdown sessions for the day. */
+  completedCountdownSessions: number;
+  /** Total countdown time for the day, in ms. */
+  totalCountdownMs: number;
 }
