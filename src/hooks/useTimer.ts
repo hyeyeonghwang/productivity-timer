@@ -71,10 +71,20 @@ export function useTimer(options: UseTimerOptions): UseTimerResult {
 
   // Keep the latest onFinish in a ref so the effect need not re-subscribe.
   const onFinishRef = useRef<UseTimerOptions['onFinish']>(onFinish);
+  const finishNotifiedRef = useRef(false);
+  
+  useEffect(() => {
+  if (state.status === 'finished' && !finishNotifiedRef.current) {
+    finishNotifiedRef.current = true;
+    onFinishRef.current?.(state.durationMs);
+   }
+  }, [state.status, state.durationMs]);
+
+
   useEffect(() => {
     onFinishRef.current = onFinish;
   }, [onFinish]);
-
+  
   /**
    * Advances the engine against the current wall-clock time. Pure `tick` returns
    * the same reference when nothing changes; we still force a re-render via the
@@ -82,13 +92,7 @@ export function useTimer(options: UseTimerOptions): UseTimerResult {
    * `onFinish` exactly once on the running -> finished edge.
    */
   const evaluate = useCallback(() => {
-    setState((prev) => {
-      const next = tickEngine(prev, Date.now());
-      if (next !== prev && next.status === 'finished') {
-        onFinishRef.current?.(next.durationMs);
-      }
-      return next;
-    });
+    setState((prev) => tickEngine(prev, Date.now()));
     setRefreshTick((n) => n + 1);
   }, []);
 
@@ -121,6 +125,7 @@ export function useTimer(options: UseTimerOptions): UseTimerResult {
   }, [evaluate]);
 
   const start = useCallback(() => {
+    finishNotifiedRef.current = false;
     setState((prev) => startEngine(prev, Date.now()));
   }, []);
 
@@ -133,10 +138,11 @@ export function useTimer(options: UseTimerOptions): UseTimerResult {
   }, []);
 
   const reset = useCallback(() => {
-    setState((prev) => resetEngine(prev));
+    finishNotifiedRef.current = false;setState((prev) => resetEngine(prev));
   }, []);
 
   const setDuration = useCallback((durationMs: number) => {
+    finishNotifiedRef.current = false;
     setState((prev) => setDurationEngine(prev, durationMs));
   }, []);
 

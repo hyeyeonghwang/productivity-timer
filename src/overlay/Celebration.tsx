@@ -70,7 +70,10 @@ export function Celebration(): JSX.Element {
 
   // Auto-dismiss after the animation. Re-armed on each run.
   useEffect(() => {
+    console.log('[celebration] auto-dismiss timer started', runId);
+    
     const id = window.setTimeout(() => {
+      console.log('[celebration] auto-dismiss fired');
       void closeCelebration();
     }, AUTO_DISMISS_MS);
     return () => window.clearTimeout(id);
