@@ -108,11 +108,16 @@ page. Latest:
 - On completion, the frontend calls a Tauri command (`show_celebration`) from
   the single completion path in `useTimerController`. In a plain browser build
   this call is a safe no-op, so the web app is unaffected.
-- Rust creates a separate `overlay.html` window that is transparent,
-  borderless, fullscreen, always-on-top, skipped in the taskbar, not focused,
-  and **click-through** (`set_ignore_cursor_events`) so it never blocks you.
-- The overlay shows a confetti burst + a "Done!" banner, respects
-  `prefers-reduced-motion`, and auto-dismisses after a few seconds.
+- Rust detects every connected monitor and creates one small `overlay.html`
+  popup per monitor (unique labels `celebration-0`, `celebration-1`, …). Each
+  popup is transparent, borderless, ~420x180, positioned near that monitor's
+  bottom-right corner with a ~24px margin (not fullscreen), always-on-top,
+  skipped in the taskbar, not focused, and **click-through**
+  (`set_ignore_cursor_events`) so it never blocks you.
+- Each popup shows a confetti burst + a "Done!" banner inside a compact card,
+  respects `prefers-reduced-motion`, and all popups are destroyed together
+  after a few seconds (generation-guarded so an older timer never closes a
+  newer celebration).
 
 ### Prerequisites
 

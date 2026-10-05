@@ -1,11 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
-import { closeCelebration, onCelebrate } from '../lib/tauri';
+import { onCelebrate } from '../lib/tauri';
 
-/** How long the celebration stays up before auto-dismissing (ms). */
-const AUTO_DISMISS_MS = 4000;
-
-/** Number of confetti pieces. */
-const CONFETTI_COUNT = 120;
+/** Number of confetti pieces (tuned for the small popup). */
+const CONFETTI_COUNT = 40;
 
 const COLORS = [
   '#6366f1',
@@ -22,7 +19,6 @@ interface ConfettiPiece {
   delay: number;
   duration: number;
   color: string;
-  drift: number;
 }
 
 function makeConfetti(): ConfettiPiece[] {
@@ -31,18 +27,16 @@ function makeConfetti(): ConfettiPiece[] {
     delay: Math.random() * 0.6,
     duration: 2.2 + Math.random() * 1.8,
     color: COLORS[Math.floor(Math.random() * COLORS.length)],
-    drift: (Math.random() - 0.5) * 20,
   }));
 }
 
 /**
- * Fullscreen celebration overlay shown on timer completion.
+ * Small per-monitor celebration popup shown on timer completion.
  *
- * It renders a confetti burst and a banner, then auto-dismisses by asking the
- * Rust side to close the overlay window. It also restarts whenever a new
- * `celebrate` event arrives (back-to-back completions). Outside Tauri, the
- * close/listen calls are no-ops, so this still renders harmlessly in the web
- * build.
+ * It renders a confetti burst and a banner inside a compact card, and restarts
+ * whenever a new `celebrate` event arrives (back-to-back completions). The Rust
+ * side owns window creation/teardown (one popup per monitor); outside Tauri the
+ * listen call is a no-op, so this still renders harmlessly in the web build.
  */
 export function Celebration(): JSX.Element {
   // `runId` forces a remount of the confetti on each new celebration.
@@ -68,15 +62,15 @@ export function Celebration(): JSX.Element {
     };
   }, [start]);
 
-  // Auto-dismiss after the animation. Re-armed on each run.
+  // Teardown is owned by the Rust side, which destroys every popup after the
+  // timeout in a generation-safe way (so an older celebration can never close a
+  // newer one). We intentionally do NOT call closeCelebration() from here: each
+  // monitor runs its own copy of this component, and having any one of them
+  // destroy windows would race the generation logic. We still track `runId` so
+  // the confetti remounts on back-to-back `celebrate` events.
   useEffect(() => {
-    console.log('[celebration] auto-dismiss timer started', runId);
-    
-    const id = window.setTimeout(() => {
-      console.log('[celebration] auto-dismiss fired');
-      void closeCelebration();
-    }, AUTO_DISMISS_MS);
-    return () => window.clearTimeout(id);
+    // no-op effect kept to document that auto-dismiss is handled in Rust.
+    return undefined;
   }, [runId]);
 
   return (
@@ -86,11 +80,10 @@ export function Celebration(): JSX.Element {
           key={i}
           className="confetti-piece"
           style={{
-            left: `${p.left}vw`,
+            left: `${p.left}%`,
             backgroundColor: p.color,
             animationDelay: `${p.delay}s`,
             animationDuration: `${p.duration}s`,
-            transform: `translateX(${p.drift}vw)`,
           }}
         />
       ))}
