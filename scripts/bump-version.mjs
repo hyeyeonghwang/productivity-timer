@@ -7,6 +7,12 @@ if (!version) {
   process.exit(1);
 }
 
+if (!/^\d+\.\d+\.\d+$/.test(version)) {
+  console.error(`Invalid version: ${version}`);
+  console.error('Expected format: x.y.z (e.g. 0.3.1)');
+  process.exit(1);
+}
+
 function updateJson(path, updater) {
   const data = JSON.parse(fs.readFileSync(path, 'utf8'));
   updater(data);
@@ -42,5 +48,35 @@ cargo = cargo.replace(
 );
 
 fs.writeFileSync(cargoPath, cargo);
+
+// README.md
+const readmePath = 'README.md';
+let readme = fs.readFileSync(readmePath, 'utf8');
+
+// Latest release version
+readme = readme.replace(
+  /\[\*\*v\d+\.\d+\.\d+\*\*\]\(https:\/\/github\.com\/hyeyeonghwang\/productivity-timer\/releases\/tag\/v\d+\.\d+\.\d+\)/,
+  `[**v${version}**](https://github.com/hyeyeonghwang/productivity-timer/releases/tag/v${version})`
+);
+
+// Installer filename
+readme = readme.replace(
+  /Productivity Timer_\d+\.\d+\.\d+_x64-setup\.exe/g,
+  `Productivity Timer_${version}_x64-setup.exe`
+);
+
+// Release download path
+readme = readme.replace(
+  /\/download\/v\d+\.\d+\.\d+\//g,
+  `/download/v${version}/`
+);
+
+// Installer filename in URL
+readme = readme.replace(
+  /Productivity\.Timer_\d+\.\d+\.\d+_x64-setup\.exe/g,
+  `Productivity.Timer_${version}_x64-setup.exe`
+);
+
+fs.writeFileSync(readmePath, readme);
 
 console.log(`Version updated to ${version}`);
